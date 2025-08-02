@@ -16,7 +16,7 @@ def generate_launch_description():
         name='mpu6050_i2c_pi_ros_driver',
         output='screen',
         parameters=[
-            {"publish_frequency": 20.0},
+            {"publish_frequency": 40.0},
         ],
     )
 
@@ -26,7 +26,7 @@ def generate_launch_description():
         name='mpu6050_calibration',
         output='screen',
         parameters=[
-            {"history_size": 500},
+            {"history_size": 1000},
         ],
     )
 

@@ -1,10 +1,16 @@
 mpu6050_i2c_pi_ros_driver:
   ros__parameters:
-    frame_id: "imu"
-    publish_frequency: 20.0
-    lin_acc_offset_x: 1.660977289193059
-    lin_acc_offset_y: 0.19307000053888004
-    lin_acc_offset_z: 0.5455802841694926
     ang_vel_offset_x: -0.011385502460200678
-    ang_vel_offset_y: 0.0017311290290363604
+    ang_vel_offset_y: 0.0015313833718398572
     ang_vel_offset_z: -6.658188573216775e-05
+    ang_vel_variance_x: 1.8279877089151979e-07
+    ang_vel_variance_y: 6.303873469776069e-08
+    ang_vel_variance_z: 8.96026554732383e-05
+    frame_id: imu
+    lin_acc_offset_x: 0.7395041104584674
+    lin_acc_offset_y: -0.09017022626981125
+    lin_acc_offset_z: 0.6058438564662563
+    lin_acc_variance_x: 0.004241863966577315
+    lin_acc_variance_y: 0.0034431650572883765
+    lin_acc_variance_z: 0.005092903038686087
+    publish_frequency: 40.0

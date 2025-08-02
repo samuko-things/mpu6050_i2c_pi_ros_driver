@@ -27,7 +27,7 @@ class MPU6050_Driver(Node):
         super().__init__("mpu6050_i2c_pi_ros_driver")
 
         self.declare_parameter("frame_id", "imu")
-        self.declare_parameter("publish_frequency", 10.0) #Hz
+        self.declare_parameter("publish_frequency", 40.0) #Hz
 
         self.declare_parameter("lin_acc_offset_x", 0.00)
         self.declare_parameter("lin_acc_offset_y", 0.00)
@@ -36,6 +36,14 @@ class MPU6050_Driver(Node):
         self.declare_parameter("ang_vel_offset_x", 0.00)
         self.declare_parameter("ang_vel_offset_y", 0.00)
         self.declare_parameter("ang_vel_offset_z", 0.00)
+
+        self.declare_parameter("lin_acc_variance_x", 0.00)
+        self.declare_parameter("lin_acc_variance_y", 0.00)
+        self.declare_parameter("lin_acc_variance_z", 0.00)
+
+        self.declare_parameter("ang_vel_variance_x", 0.00)
+        self.declare_parameter("ang_vel_variance_y", 0.00)
+        self.declare_parameter("ang_vel_variance_z", 0.00)
 
         self.frame_id = self.get_parameter("frame_id").value
         self.publish_frequency = self.get_parameter("publish_frequency").value
@@ -48,16 +56,32 @@ class MPU6050_Driver(Node):
         self.ang_vel_offset_y = self.get_parameter("ang_vel_offset_y").value
         self.ang_vel_offset_z = self.get_parameter("ang_vel_offset_z").value
 
+        self.lin_acc_variance_x = self.get_parameter("lin_acc_variance_x").value
+        self.lin_acc_variance_y = self.get_parameter("lin_acc_variance_y").value
+        self.lin_acc_variance_z = self.get_parameter("lin_acc_variance_z").value
+
+        self.ang_vel_variance_x = self.get_parameter("ang_vel_variance_x").value
+        self.ang_vel_variance_y = self.get_parameter("ang_vel_variance_y").value
+        self.ang_vel_variance_z = self.get_parameter("ang_vel_variance_z").value
+
         self.get_logger().info(f'frame_id: {self.frame_id}')
         self.get_logger().info(f'publish_frequency: {self.publish_frequency}')
 
-        self.get_logger().info(f'lin_acc_offset_x: {self.lin_acc_offset_x}')
-        self.get_logger().info(f'lin_acc_offset_y: {self.lin_acc_offset_y}')
-        self.get_logger().info(f'lin_acc_offset_z: {self.lin_acc_offset_z}')
+        # self.get_logger().info(f'lin_acc_offset_x: {self.lin_acc_offset_x}')
+        # self.get_logger().info(f'lin_acc_offset_y: {self.lin_acc_offset_y}')
+        # self.get_logger().info(f'lin_acc_offset_z: {self.lin_acc_offset_z}')
 
-        self.get_logger().info(f'ang_vel_offset_x: {self.ang_vel_offset_x}')
-        self.get_logger().info(f'ang_vel_offset_y: {self.ang_vel_offset_y}')
-        self.get_logger().info(f'ang_vel_offset_z: {self.ang_vel_offset_z}')
+        # self.get_logger().info(f'ang_vel_offset_x: {self.ang_vel_offset_x}')
+        # self.get_logger().info(f'ang_vel_offset_y: {self.ang_vel_offset_y}')
+        # self.get_logger().info(f'ang_vel_offset_z: {self.ang_vel_offset_z}')
+
+        # self.get_logger().info(f'lin_acc_variance_x: {self.lin_acc_variance_x}')
+        # self.get_logger().info(f'lin_acc_variance_y: {self.lin_acc_variance_y}')
+        # self.get_logger().info(f'lin_acc_variance_z: {self.lin_acc_variance_z}')
+
+        # self.get_logger().info(f'ang_vel_variance_x: {self.ang_vel_variance_x}')
+        # self.get_logger().info(f'ang_vel_variance_y: {self.ang_vel_variance_y}')
+        # self.get_logger().info(f'ang_vel_variance_z: {self.ang_vel_variance_z}')
         
         
         # I2C Interafce
@@ -65,6 +89,9 @@ class MPU6050_Driver(Node):
         self.init_i2c()
 
         # ROS 2 Interface
+        self.acc_off_sub_ = self.create_subscription(Vector3, "/imu/acc_offset", self.read_acc_offset_callback, 10)
+        self.gyr_off_sub_ = self.create_subscription(Vector3, "/imu/gyr_offset", self.read_gyr_offset_callback, 10)
+
         self.imu_raw_pub_ = self.create_publisher(Imu, "/imu/raw", qos_profile=qos_profile_sensor_data)
         self.imu_raw_msg_ = Imu()
         self.imu_raw_msg_.header.frame_id = "imu_raw"
@@ -72,6 +99,8 @@ class MPU6050_Driver(Node):
         self.imu_pub_ = self.create_publisher(Imu, "/imu/data", qos_profile=qos_profile_sensor_data)
         self.imu_msg_ = Imu()
         self.imu_msg_.header.frame_id = self.frame_id
+        self.imu_msg_.angular_velocity_covariance = [self.ang_vel_variance_x, 0.0, 0.0, 0.0, self.ang_vel_variance_y, 0.0, 0.0, 0.0, self.ang_vel_variance_z]
+        self.imu_msg_.linear_acceleration_covariance = [self.lin_acc_variance_x, 0.0, 0.0, 0.0, self.lin_acc_variance_y, 0.0, 0.0, 0.0, self.lin_acc_variance_z]
         
         self.timer_ = self.create_timer(1.0/self.publish_frequency, self.timerCallback)
 
@@ -130,6 +159,20 @@ class MPU6050_Driver(Node):
             self.imu_pub_.publish(self.imu_msg_)
         except OSError:
             self.is_connected_ = False
+
+    def read_acc_offset_callback(self, msg):
+        self.lin_acc_offset_x = msg.x
+        self.lin_acc_offset_y = msg.y
+        self.lin_acc_offset_z = msg.z
+
+        self.get_logger().info("lin_acc_offset data read and updated successfully")
+
+    def read_gyr_offset_callback(self, msg):
+        self.ang_vel_offset_x = msg.x
+        self.ang_vel_offset_y = msg.y
+        self.ang_vel_offset_z = msg.z
+
+        self.get_logger().info("ang_vel_offset data read and updated successfully")
 
     def init_i2c(self):
         try:
